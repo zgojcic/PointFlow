@@ -1,21 +1,22 @@
 #! /bin/bash
 
-cate="car"
+cate="chair"
 dims="512-512-512"
 latent_dims="256-256"
 num_blocks=1
 latent_num_blocks=1
 zdim=128
-batch_size=16
+batch_size=256
 lr=2e-3
 epochs=4000
 ds=shapenet15k
-log_name="gen/${ds}-cate-${cate}"
-data_dir="/mount/data/"
+log_name="gen/${ds}-cate_${cate}-seqback_dist"
+data_dir="/mount/data"
 
 python train.py \
     --log_name ${log_name} \
     --lr ${lr} \
+    --train_T False \
     --dataset_type ${ds} \
     --data_dir ${data_dir} \
     --cates ${cate} \
@@ -30,6 +31,7 @@ python train.py \
     --viz_freq 1 \
     --log_freq 1 \
     --val_freq 10 \
+    --distributed \
     --use_latent_flow
 
 echo "Done"
