@@ -13,11 +13,11 @@ import torch.nn as nn
 
 
 def get_test_loader(args):
-    _, te_dataset = get_datasets(args)
-    if args.resume_dataset_mean is not None and args.resume_dataset_std is not None:
-        mean = np.load(args.resume_dataset_mean)
-        std = np.load(args.resume_dataset_std)
-        te_dataset.renormalize(mean, std)
+    _, _, te_dataset = get_datasets(args)
+    # if args.resume_dataset_mean is not None and args.resume_dataset_std is not None:
+    #     mean = np.load(args.resume_dataset_mean)
+    #     std = np.load(args.resume_dataset_std)
+    #     te_dataset.renormalize(mean, std)
     loader = torch.utils.data.DataLoader(
         dataset=te_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=0, pin_memory=True, drop_last=False)
@@ -45,11 +45,11 @@ def evaluate_recon(model, args):
             tr_pc = tr_pc.cuda() if args.gpu is None else tr_pc.cuda(args.gpu)
             B, N = te_pc.size(0), te_pc.size(1)
             out_pc = model.reconstruct(tr_pc, num_points=N)
-            m, s = data['mean'].float(), data['std'].float()
-            m = m.cuda() if args.gpu is None else m.cuda(args.gpu)
-            s = s.cuda() if args.gpu is None else s.cuda(args.gpu)
-            out_pc = out_pc * s + m
-            te_pc = te_pc * s + m
+            # m, s = data['mean'].float(), data['std'].float()
+            # m = m.cuda() if args.gpu is None else m.cuda(args.gpu)
+            # s = s.cuda() if args.gpu is None else s.cuda(args.gpu)
+            # out_pc = out_pc * s + m
+            # te_pc = te_pc * s + m
 
             all_sample.append(out_pc)
             all_ref.append(te_pc)
@@ -108,11 +108,11 @@ def evaluate_gen(model, args):
         _, out_pc = model.sample(B, N)
 
         # denormalize
-        m, s = data['mean'].float(), data['std'].float()
-        m = m.cuda() if args.gpu is None else m.cuda(args.gpu)
-        s = s.cuda() if args.gpu is None else s.cuda(args.gpu)
-        out_pc = out_pc * s + m
-        te_pc = te_pc * s + m
+        # m, s = data['mean'].float(), data['std'].float()
+        # m = m.cuda() if args.gpu is None else m.cuda(args.gpu)
+        # s = s.cuda() if args.gpu is None else s.cuda(args.gpu)
+        # out_pc = out_pc * s + m
+        # te_pc = te_pc * s + m
 
         all_sample.append(out_pc)
         all_ref.append(te_pc)

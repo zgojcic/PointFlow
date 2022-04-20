@@ -271,6 +271,106 @@ class ShapeNet15kPointClouds(Uniform15KPC):
             input_dim=3)
 
 
+
+
+class ShapeNet3DGen(Uniform15KPC):
+    def __init__(self, root_dir="/mount/data/",
+                 categories=['airplane'], tr_sample_size=10000, te_sample_size=2048,
+                 split='train', scale=1., normalize_per_shape=False,
+                 normalize_std_per_axis=False,
+                 random_subsample=False,
+                 all_points_mean=None, all_points_std=None):
+
+        self.root_dir = root_dir
+        self.split = split
+        assert self.split in ['train', 'test', 'val']
+        self.tr_sample_size = tr_sample_size
+        self.te_sample_size = te_sample_size
+        self.cates = categories
+        if 'all' in categories:
+            self.synset_ids = list(cate_to_synsetid.values())
+        else:
+            self.synset_ids = [cate_to_synsetid[c] for c in self.cates]
+
+        # assert 'v2' in root_dir, "Only supporting v2 right now."
+        self.gravity_axis = 1
+        self.display_axis_order = [0, 2, 1]
+
+        self.random_subsample = random_subsample
+        self.input_dim = 3
+
+        self.all_cate_mids = []
+        self.cate_idx_lst = []
+        self.all_points = []
+
+        # Read the split 
+        with open(os.path.join(self.root_dir,'splits',self.synset_ids[0], self.split +'.txt')) as f:
+            split_models = f.readlines()
+            split_models = [model.rstrip() for model in split_models]
+
+        # Iterate over the models and load the points
+        for cate_idx, subd in enumerate(self.synset_ids):
+            # NOTE: [subd] here is synset id
+            sub_path = os.path.join(root_dir, subd)
+            if not os.path.isdir(sub_path):
+                print("Directory missing : %s" % sub_path)
+                continue
+
+            all_mids = []
+            for x in os.listdir(sub_path):
+                if not x.endswith('.npz'):
+                    continue
+                elif x.split('.')[0] in split_models:
+
+                    obj_fname = os.path.join(root_dir, subd, x)
+                    try:
+                        point_cloud = np.load(obj_fname)['vertices']  # (15k, 3)
+                    except:
+                        continue
+
+                    assert point_cloud.shape[0] == 15000
+                    self.all_points.append(point_cloud[np.newaxis, ...])
+                    self.cate_idx_lst.append(cate_idx)
+                    self.all_cate_mids.append((subd, x.split('.')[0]))
+
+        # Shuffle the index deterministically (based on the number of examples)
+        self.shuffle_idx = list(range(len(self.all_points)))
+        random.Random(38383).shuffle(self.shuffle_idx)
+        self.cate_idx_lst = [self.cate_idx_lst[i] for i in self.shuffle_idx]
+        self.all_points = [self.all_points[i] for i in self.shuffle_idx]
+        self.all_cate_mids = [self.all_cate_mids[i] for i in self.shuffle_idx]
+
+        # Normalization
+        self.all_points = np.concatenate(self.all_points)  # (N, 15000, 3)
+        self.normalize_per_shape = normalize_per_shape
+        self.normalize_std_per_axis = normalize_std_per_axis
+        if all_points_mean is not None and all_points_std is not None:  # using loaded dataset stats
+            self.all_points_mean = all_points_mean
+            self.all_points_std = all_points_std
+        elif self.normalize_per_shape:  # per shape normalization
+            B, N = self.all_points.shape[:2]
+            self.all_points_mean = self.all_points.mean(axis=1).reshape(B, 1, self.input_dim)
+            if normalize_std_per_axis:
+                self.all_points_std = self.all_points.reshape(B, N, -1).std(axis=1).reshape(B, 1, self.input_dim)
+            else:
+                self.all_points_std = self.all_points.reshape(B, -1).std(axis=1).reshape(B, 1, 1)
+        else:  # normalize across the dataset
+            self.all_points_mean = self.all_points.reshape(-1, self.input_dim).mean(axis=0).reshape(1, 1, self.input_dim)
+            if normalize_std_per_axis:
+                self.all_points_std = self.all_points.reshape(-1, self.input_dim).std(axis=0).reshape(1, 1, self.input_dim)
+            else:
+                self.all_points_std = self.all_points.reshape(-1).std(axis=0).reshape(1, 1, 1)
+
+        # self.all_points = (self.all_points - self.all_points_mean) / self.all_points_std
+        self.train_points = self.all_points[:, :10000]
+        self.test_points = self.all_points[:, 10000:]
+
+        self.tr_sample_size = min(10000, tr_sample_size)
+        self.te_sample_size = min(5000, te_sample_size)
+        print("Total number of data:%d" % len(self.train_points))
+        print("Min number of points: (train)%d (test)%d"
+              % (self.tr_sample_size, self.te_sample_size))
+
 def init_np_seed(worker_id):
     seed = torch.initial_seed()
     np.random.seed(seed % 4294967296)
@@ -323,7 +423,7 @@ def _get_MN10_datasets_(args, data_dir=None):
 
 def get_datasets(args):
     if args.dataset_type == 'shapenet15k':
-        tr_dataset = ShapeNet15kPointClouds(
+        tr_dataset = ShapeNet3DGen(
             categories=args.cates, split='train',
             tr_sample_size=args.tr_max_sample_points,
             te_sample_size=args.te_max_sample_points,
@@ -331,7 +431,8 @@ def get_datasets(args):
             normalize_per_shape=args.normalize_per_shape,
             normalize_std_per_axis=args.normalize_std_per_axis,
             random_subsample=True)
-        te_dataset = ShapeNet15kPointClouds(
+        
+        val_dataset = ShapeNet3DGen(
             categories=args.cates, split='val',
             tr_sample_size=args.tr_max_sample_points,
             te_sample_size=args.te_max_sample_points,
@@ -341,6 +442,17 @@ def get_datasets(args):
             all_points_mean=tr_dataset.all_points_mean,
             all_points_std=tr_dataset.all_points_std,
         )
+        te_dataset = ShapeNet3DGen(
+            categories=args.cates, split='test',
+            tr_sample_size=args.tr_max_sample_points,
+            te_sample_size=args.te_max_sample_points,
+            scale=args.dataset_scale, root_dir=args.data_dir,
+            normalize_per_shape=args.normalize_per_shape,
+            normalize_std_per_axis=args.normalize_std_per_axis,
+            all_points_mean=tr_dataset.all_points_mean,
+            all_points_std=tr_dataset.all_points_std,
+        )
+
     elif args.dataset_type == 'modelnet40_15k':
         tr_dataset, te_dataset = _get_MN40_datasets_(args)
     elif args.dataset_type == 'modelnet10_15k':
@@ -382,8 +494,10 @@ def get_data_loaders(args):
 
 
 if __name__ == "__main__":
-    shape_ds = ShapeNet15kPointClouds(categories=['airplane'], split='val')
-    x_tr, x_te = next(iter(shape_ds))
-    print(x_tr.shape)
-    print(x_te.shape)
+    # shape_ds = ShapeNet15kPointClouds(categories=['airplane'], split='val')
+    # x_tr, x_te = next(iter(shape_ds))
+    # print(x_tr.shape)
+    # print(x_te.shape)
 
+    shape_ds = ShapeNet3DGen(categories=['chair'], split='val')
+    x_tr, x_te = next(iter(shape_ds))

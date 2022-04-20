@@ -195,7 +195,7 @@ class PointFlow(nn.Module):
         }
 
     def encode(self, x):
-        z_mu, z_sigma = self.encoder(x)
+        z_mu, z_sigma = self.encoder(x) 
         if self.use_deterministic_encoder:
             return z_mu
         else:
