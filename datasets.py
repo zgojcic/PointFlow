@@ -431,7 +431,7 @@ def get_datasets(args):
             normalize_per_shape=args.normalize_per_shape,
             normalize_std_per_axis=args.normalize_std_per_axis,
             random_subsample=True)
-        
+
         val_dataset = ShapeNet3DGen(
             categories=args.cates, split='val',
             tr_sample_size=args.tr_max_sample_points,

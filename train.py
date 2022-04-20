@@ -11,6 +11,7 @@ import faulthandler
 import torch.multiprocessing as mp
 import time
 import scipy.misc
+from PIL import Image
 from models.networks import PointFlow
 from torch import optim
 from args import get_args
@@ -38,9 +39,9 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
                                 world_size=args.world_size, rank=args.rank)
 
     if args.log_name is not None:
-        log_dir = "runs/%s" % args.log_name
+        log_dir = os.path.join(save_dir,"runs/%s" % args.log_name)
     else:
-        log_dir = "runs/time-%d" % time.time()
+        log_dir = os.path.join(save_dir,"runs/time-%d" % time.time())
 
     if not args.distributed or (args.rank % ngpus_per_node == 0):
         writer = SummaryWriter(logdir=log_dir)
@@ -201,8 +202,8 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
                                              pert_order=train_loader.dataset.display_axis_order)
                 results.append(res)
             res = np.concatenate(results, axis=1)
-            scipy.misc.imsave(os.path.join(save_dir, 'images', 'tr_vis_conditioned_epoch%d-gpu%s.png' % (epoch, args.gpu)),
-                              res.transpose((1, 2, 0)))
+            res_img = Image.fromarray(res.transpose(1,2,0))
+            res_img.save(os.path.join(save_dir, 'images', 'tr_vis_conditioned_epoch%d-gpu%s.png' % (epoch, args.gpu)))
             if writer is not None:
                 writer.add_image('tr_vis/conditioned', torch.as_tensor(res), epoch)
 
@@ -217,8 +218,10 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
                                                  pert_order=train_loader.dataset.display_axis_order)
                     results.append(res)
                 res = np.concatenate(results, axis=1)
-                scipy.misc.imsave(os.path.join(save_dir, 'images', 'tr_vis_conditioned_epoch%d-gpu%s.png' % (epoch, args.gpu)),
-                                  res.transpose((1, 2, 0)))
+                res_img = Image.fromarray(res.transpose(1,2,0))
+                res_img.save(os.path.join(save_dir, 'images', 'tr_vis_conditioned_epoch%d-gpu%s.png' % (epoch, args.gpu)))
+                # scipy.misc.imsave(os.path.join(save_dir, 'images', 'tr_vis_conditioned_epoch%d-gpu%s.png' % (epoch, args.gpu)),
+                #                 res.transpose((1, 2, 0)))
                 if writer is not None:
                     writer.add_image('tr_vis/sampled', torch.as_tensor(res), epoch)
 
@@ -234,7 +237,7 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
 def main():
     # command line args
     args = get_args()
-    save_dir = os.path.join("checkpoints", args.log_name)
+    save_dir = os.path.join("/result", args.log_name)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         os.makedirs(os.path.join(save_dir, 'images'))
