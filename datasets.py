@@ -460,7 +460,7 @@ def get_datasets(args):
     else:
         raise Exception("Invalid dataset type:%s" % args.dataset_type)
 
-    return tr_dataset, te_dataset
+    return tr_dataset, val_dataset, te_dataset
 
 
 def get_clf_datasets(args):
