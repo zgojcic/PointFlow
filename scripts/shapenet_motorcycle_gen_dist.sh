@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cate="chair"
+cate="motorcycle"
 dims="512-512-512"
 latent_dims="256-256"
 num_blocks=1
@@ -27,10 +27,10 @@ python train.py \
     --batch_size ${batch_size} \
     --zdim ${zdim} \
     --epochs ${epochs} \
-    --save_freq 50 \
-    --viz_freq 1 \
+    --save_freq 10 \
+    --viz_freq 1000 \
     --log_freq 1 \
-    --val_freq 50 \
+    --val_freq 100 \
     --distributed \
     --use_latent_flow
 
