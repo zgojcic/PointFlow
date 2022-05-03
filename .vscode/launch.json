@@ -12,6 +12,15 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--cates", "airplane", "--resume_checkpoint", "pretrained_models/gen/airplane/checkpoint.pt", "--dims", "512-512-512", "--latent_dims", "256-256", "--use_latent_flow", "--num_sample_shapes", "20" ,"--num_sample_points" ,"2048"]
+        },
+        {
+            "name": "Python: eval metrics",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--dataset_path", "/home/zgojcic/data/3d_gan_eval/raw_data", "--gen_path", "/home/zgojcic/data/3d_gan_eval/pointflow", "--category", "car", "--n_points", "2048"]
         }
     ]
 }

@@ -101,7 +101,10 @@ def evaluate_gen(model, args):
     loader = get_test_loader(args)
     all_sample = []
     all_ref = []
-    for data in loader:
+    all_models = len(loader)
+
+    for b_idx, data in enumerate(loader):
+        print(f'{b_idx}/{all_models}')
         idx_b, te_pc = data['idx'], data['test_points']
         te_pc = te_pc.cuda() if args.gpu is None else te_pc.cuda(args.gpu)
         B, N = te_pc.size(0), te_pc.size(1)
@@ -149,7 +152,7 @@ def main(args):
     model.multi_gpu_wrapper(_transform_)
 
     print("Resume Path:%s" % args.resume_checkpoint)
-    checkpoint = torch.load(args.resume_checkpoint)
+    checkpoint = torch.load(args.resume_checkpoint)['model']
     model.load_state_dict(checkpoint)
     model.eval()
 
