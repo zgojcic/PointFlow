@@ -120,7 +120,7 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
     return results
 
 
-def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size):
+def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, compute_emd):
     N_sample = sample_pcs.shape[0]
     N_ref = ref_pcs.shape[0]
     all_cd = []
@@ -143,16 +143,24 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size):
             dl, dr = distChamferCUDA(sample_batch_exp, ref_batch)
             cd_lst.append((dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1))
 
-            emd_batch = emd_approx_cuda(sample_batch_exp, ref_batch)
-            emd_lst.append(emd_batch.view(1, -1))
+            if compute_emd:
+                emd_batch = emd_approx_cuda(sample_batch_exp, ref_batch)
+                emd_lst.append(emd_batch.view(1, -1))
 
         cd_lst = torch.cat(cd_lst, dim=1)
-        emd_lst = torch.cat(emd_lst, dim=1)
         all_cd.append(cd_lst)
-        all_emd.append(emd_lst)
+
+        if compute_emd:
+            emd_lst = torch.cat(emd_lst, dim=1)
+            all_emd.append(emd_lst)
+        
 
     all_cd = torch.cat(all_cd, dim=0)  # N_sample, N_ref
-    all_emd = torch.cat(all_emd, dim=0)  # N_sample, N_ref
+    
+    if compute_emd:
+        all_emd = torch.cat(all_emd, dim=0)  # N_sample, N_ref
+    else:
+        all_emd = None
 
     return all_cd, all_emd
 
@@ -208,30 +216,34 @@ def lgan_mmd_cov(all_dist):
 def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
     results = {}
 
-    M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size)
+    M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size, compute_emd=False)
 
     res_cd = lgan_mmd_cov(M_rs_cd.t())
     results.update({
         "%s-CD" % k: v for k, v in res_cd.items()
     })
 
-    res_emd = lgan_mmd_cov(M_rs_emd.t())
-    results.update({
-        "%s-EMD" % k: v for k, v in res_emd.items()
-    })
+    if M_rs_emd is not None:
+        res_emd = lgan_mmd_cov(M_rs_emd.t())
+        results.update({
+            "%s-EMD" % k: v for k, v in res_emd.items()
+        })
 
-    M_rr_cd, M_rr_emd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size)
-    M_ss_cd, M_ss_emd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size)
+    M_rr_cd, M_rr_emd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size, compute_emd=False)
+    M_ss_cd, M_ss_emd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size, compute_emd=False)
 
     # 1-NN results
     one_nn_cd_res = knn(M_rr_cd, M_rs_cd, M_ss_cd, 1, sqrt=False)
     results.update({
         "1-NN-CD-%s" % k: v for k, v in one_nn_cd_res.items() if 'acc' in k
     })
-    one_nn_emd_res = knn(M_rr_emd, M_rs_emd, M_ss_emd, 1, sqrt=False)
-    results.update({
-        "1-NN-EMD-%s" % k: v for k, v in one_nn_emd_res.items() if 'acc' in k
-    })
+
+    if M_rr_emd is not None:
+
+        one_nn_emd_res = knn(M_rr_emd, M_rs_emd, M_ss_emd, 1, sqrt=False)
+        results.update({
+            "1-NN-EMD-%s" % k: v for k, v in one_nn_emd_res.items() if 'acc' in k
+        })
 
     return results
 

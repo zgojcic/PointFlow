@@ -17,5 +17,5 @@ python test.py \
     --num_blocks ${num_blocks} \
     --latent_num_blocks ${latent_num_blocks} \
     --zdim ${zdim} \
-
+    --train_T False
 
