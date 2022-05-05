@@ -32,7 +32,7 @@ def evaluate_recon(model, args):
         cates = args.cates
     all_results = {}
     cate_to_len = {}
-    save_dir = os.path.dirname(args.resume_checkpoint)
+    save_dir = '/result/'
     for cate in cates:
         args.cates = [cate]
         loader = get_test_loader(args)
