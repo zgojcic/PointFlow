@@ -102,6 +102,7 @@ def evaluate_gen(model, args):
     all_sample = []
     all_ref = []
     all_models = len(loader)
+    cate = args.cates
 
     for b_idx, data in enumerate(loader):
         print(f'{b_idx}/{all_models}')
@@ -126,9 +127,9 @@ def evaluate_gen(model, args):
           % (sample_pcs.size(), ref_pcs.size()))
 
     # Save the generative output
-    save_dir = os.path.dirname(args.resume_checkpoint)
-    np.save(os.path.join(save_dir, "model_out_smp.npy"), sample_pcs.cpu().detach().numpy())
-    np.save(os.path.join(save_dir, "model_out_ref.npy"), ref_pcs.cpu().detach().numpy())
+    save_dir = '/result/'
+    np.save(os.path.join(save_dir, f"model_out_smp_{cate}.npy"), sample_pcs.cpu().detach().numpy())
+    np.save(os.path.join(save_dir, f"model_out_ref_{cate}.npy"), ref_pcs.cpu().detach().numpy())
 
     # Compute metrics
     results = compute_all_metrics(sample_pcs, ref_pcs, args.batch_size, accelerated_cd=True)
