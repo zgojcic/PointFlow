@@ -101,10 +101,11 @@ def evaluate_gen(model, args):
     loader = get_test_loader(args)
     all_sample = []
     all_ref = []
-    all_models = len(loader)
+    all_models = args.n_shapes
     cate = args.cates
-
-    for b_idx, data in enumerate(loader):
+    data = loader[0]
+    
+    for b_idx in range(all_models):
         print(f'{b_idx}/{all_models}')
         idx_b, te_pc = data['idx'], data['test_points']
         te_pc = te_pc.cuda() if args.gpu is None else te_pc.cuda(args.gpu)
