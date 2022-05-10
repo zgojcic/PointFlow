@@ -213,10 +213,10 @@ def lgan_mmd_cov(all_dist):
     }
 
 
-def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
+def compute_all_metrics(sample_pcs, ref_pcs, batch_size, compute_emd):
     results = {}
 
-    M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size, compute_emd=False)
+    M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size, compute_emd=compute_emd)
 
     res_cd = lgan_mmd_cov(M_rs_cd.t())
     results.update({
@@ -229,8 +229,8 @@ def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
             "%s-EMD" % k: v for k, v in res_emd.items()
         })
 
-    M_rr_cd, M_rr_emd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size, compute_emd=False)
-    M_ss_cd, M_ss_emd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size, compute_emd=False)
+    M_rr_cd, M_rr_emd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size, compute_emd=compute_emd)
+    M_ss_cd, M_ss_emd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size, compute_emd=compute_emd)
 
     # 1-NN results
     one_nn_cd_res = knn(M_rr_cd, M_rs_cd, M_ss_cd, 1, sqrt=False)
@@ -291,7 +291,7 @@ def evaluate(args):
     assert ref_pcs.shape[0] == gen_pcs.shape[0], "The number of generated models does not correspond the test set size"
 
     # Compute metrics
-    results = compute_all_metrics(gen_pcs, ref_pcs, args.batch_size)
+    results = compute_all_metrics(gen_pcs, ref_pcs, args.batch_size, args.compute_emd)
     results = {k: (v.cpu().detach().item()
                     if not isinstance(v, float) else v) for k, v in results.items()}
     pprint(results)
@@ -306,6 +306,7 @@ if __name__ == "__main__":
     parser.add_argument("--category", type=str, required=True, help="category to evaluate")
     parser.add_argument("--n_points", type=int, default=2048, help="Number of points used for evaluation")
     parser.add_argument("--batch_size", type=int, default=50, help="batch size")
+    parser.add_argument("--compute_emd", action='store_true', help="If selected EMD metrics will be computed as well")
     args = parser.parse_args()
 
     evaluate(args)
