@@ -11,7 +11,7 @@ lr=2e-3
 epochs=4000
 ds=shapenet15k
 log_name="gen/${ds}-cate_${cate}-seqback_dist"
-data_dir="/raid/data"
+data_dir="/raid/"
 
 python train.py \
     --log_name ${log_name} \
