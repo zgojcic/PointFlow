@@ -26,7 +26,8 @@ synsetid_to_cate = {
     '04256520': 'sofa', '04330267': 'stove', '04530566': 'vessel',
     '04554684': 'washer', '02992529': 'cellphone',
     '02843684': 'birdhouse', '02871439': 'bookshelf',
-    '00000000': 'animal'
+    '00000000': 'animal',
+    '02958343_surface_pcd_all': 'cars_new'
     # '02834778': 'bicycle', not in our taxonomy
 }
 cate_to_synsetid = {v: k for k, v in synsetid_to_cate.items()}
