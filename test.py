@@ -105,12 +105,12 @@ def evaluate_gen(model, args):
     cate = args.cates
     data = next(iter(loader))
     idx_b, te_pc = data['idx'], data['test_points']
-    te_pc = 1000
 
     for b_idx in range(all_models):
         print(f'{b_idx}/{all_models}')
         te_pc = te_pc.cuda() if args.gpu is None else te_pc.cuda(args.gpu)
         B, N = te_pc.size(0), te_pc.size(1)
+        N = 10000
         _, out_pc = model.sample(B, N)
 
         # denormalize
