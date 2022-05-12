@@ -105,6 +105,7 @@ def evaluate_gen(model, args):
     cate = args.cates
     data = next(iter(loader))
     idx_b, te_pc = data['idx'], data['test_points']
+    te_pc = 1000
 
     for b_idx in range(all_models):
         print(f'{b_idx}/{all_models}')

@@ -11,7 +11,7 @@ def add_args(parser):
                         help='Number of input dimensions (3 for 3D point clouds)')
     parser.add_argument('--dims', type=str, default='256')
     parser.add_argument('--latent_dims', type=str, default='256')
-    parser.add_argument('--n_shapes', type=int, default=7500)
+    parser.add_argument('--n_shapes', type=int, default=150)
     parser.add_argument("--num_blocks", type=int, default=1,
                         help='Number of stacked CNFs.')
     parser.add_argument("--latent_num_blocks", type=int, default=1,
